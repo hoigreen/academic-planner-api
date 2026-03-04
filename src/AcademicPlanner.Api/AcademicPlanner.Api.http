@@ -1,0 +1,6 @@
+@AcademicPlanner.Api_HostAddress = http://localhost:5098/api
+
+GET {{AcademicPlanner.Api_HostAddress}}/health
+Accept: application/json
+
+###
