@@ -17,6 +17,8 @@ public partial class program
 
     public string meta { get; set; } = null!;
 
+    public virtual ICollection<concentration> concentrations { get; set; } = new List<concentration>();
+
     public virtual ICollection<cohort> cohorts { get; set; } = new List<cohort>();
 
     public virtual ICollection<curriculum_category> curriculum_categories { get; set; } = new List<curriculum_category>();

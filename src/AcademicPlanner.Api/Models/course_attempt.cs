@@ -19,6 +19,8 @@ public partial class course_attempt
 
     public decimal? credits { get; set; }
 
+    public string? grade_letter { get; set; }
+
     public bool is_completed { get; set; }
 
     public decimal? snapshot_cum_credits { get; set; }

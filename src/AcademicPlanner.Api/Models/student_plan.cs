@@ -13,6 +13,8 @@ public partial class student_plan
 
     public string course_code { get; set; } = null!;
 
+    public string status { get; set; } = null!;
+
     public string? note { get; set; }
 
     public DateTime created_at { get; set; }

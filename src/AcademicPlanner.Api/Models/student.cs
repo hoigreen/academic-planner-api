@@ -31,5 +31,7 @@ public partial class student
 
     public virtual program? program { get; set; }
 
+    public virtual ICollection<student_concentration> student_concentrations { get; set; } = new List<student_concentration>();
+
     public virtual ICollection<student_plan> student_plans { get; set; } = new List<student_plan>();
 }

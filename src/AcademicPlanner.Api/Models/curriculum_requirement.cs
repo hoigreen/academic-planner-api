@@ -11,6 +11,8 @@ public partial class curriculum_requirement
 
     public long category_id { get; set; }
 
+    public string kind { get; set; } = null!;
+
     public string? course_code { get; set; }
 
     public decimal? min_credits { get; set; }
@@ -18,6 +20,8 @@ public partial class curriculum_requirement
     public bool is_required { get; set; }
 
     public string? prereq_rule { get; set; }
+
+    public string[]? allowed_courses { get; set; }
 
     public int? effective_term_from { get; set; }
 

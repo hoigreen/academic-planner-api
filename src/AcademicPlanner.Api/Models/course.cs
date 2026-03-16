@@ -19,7 +19,13 @@ public partial class course
 
     public string meta { get; set; } = null!;
 
+    public virtual ICollection<concentration_course> concentration_courses { get; set; } = new List<concentration_course>();
+
+    public virtual ICollection<course_advisory> course_advisories { get; set; } = new List<course_advisory>();
+
     public virtual ICollection<course_attempt> course_attempts { get; set; } = new List<course_attempt>();
+
+    public virtual ICollection<course_offering> course_offerings { get; set; } = new List<course_offering>();
 
     public virtual ICollection<curriculum_requirement> curriculum_requirements { get; set; } = new List<curriculum_requirement>();
 

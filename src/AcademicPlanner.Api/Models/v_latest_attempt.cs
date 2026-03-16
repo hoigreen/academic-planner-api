@@ -13,6 +13,8 @@ public partial class v_latest_attempt
 
     public int? attempt_no { get; set; }
 
+    public string? grade_letter { get; set; }
+
     public bool? is_completed { get; set; }
 
     public decimal? credits { get; set; }

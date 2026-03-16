@@ -14,9 +14,17 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<cohort> cohorts { get; set; }
 
+    public virtual DbSet<concentration> concentrations { get; set; }
+
+    public virtual DbSet<concentration_course> concentration_courses { get; set; }
+
     public virtual DbSet<course> courses { get; set; }
 
+    public virtual DbSet<course_advisory> course_advisories { get; set; }
+
     public virtual DbSet<course_attempt> course_attempts { get; set; }
+
+    public virtual DbSet<course_offering> course_offerings { get; set; }
 
     public virtual DbSet<curriculum_category> curriculum_categories { get; set; }
 
@@ -29,6 +37,8 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<program> programs { get; set; }
 
     public virtual DbSet<student> students { get; set; }
+
+    public virtual DbSet<student_concentration> student_concentrations { get; set; }
 
     public virtual DbSet<student_plan> student_plans { get; set; }
 
@@ -59,6 +69,50 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("cohorts_program_id_fkey");
         });
 
+        modelBuilder.Entity<concentration>(entity =>
+        {
+            entity.HasKey(e => e.concentration_id).HasName("concentrations_pkey");
+
+            entity.ToTable("concentrations", "acad");
+
+            entity.HasIndex(e => new { e.program_id, e.concentration_code }, "concentrations_program_id_concentration_code_key").IsUnique();
+
+            entity.Property(e => e.meta)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb");
+            entity.Property(e => e.min_credits).HasPrecision(5, 1);
+
+            entity.HasOne(d => d.program).WithMany(p => p.concentrations)
+                .HasForeignKey(d => d.program_id)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("concentrations_program_id_fkey");
+        });
+
+        modelBuilder.Entity<concentration_course>(entity =>
+        {
+            entity.HasKey(e => e.concentration_course_id).HasName("concentration_courses_pkey");
+
+            entity.ToTable("concentration_courses", "acad");
+
+            entity.HasIndex(e => new { e.concentration_id, e.course_code }, "concentration_courses_concentration_id_course_code_key").IsUnique();
+
+            entity.Property(e => e.course_code).HasMaxLength(20);
+            entity.Property(e => e.is_entry_course).HasDefaultValue(false);
+            entity.Property(e => e.is_required).HasDefaultValue(true);
+            entity.Property(e => e.meta)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb");
+
+            entity.HasOne(d => d.concentration).WithMany(p => p.concentration_courses)
+                .HasForeignKey(d => d.concentration_id)
+                .HasConstraintName("concentration_courses_concentration_id_fkey");
+
+            entity.HasOne(d => d.course_codeNavigation).WithMany(p => p.concentration_courses)
+                .HasForeignKey(d => d.course_code)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("concentration_courses_course_code_fkey");
+        });
+
         modelBuilder.Entity<course>(entity =>
         {
             entity.HasKey(e => e.course_code).HasName("courses_pkey");
@@ -77,6 +131,23 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.meta)
                 .HasDefaultValueSql("'{}'::jsonb")
                 .HasColumnType("jsonb");
+        });
+
+        modelBuilder.Entity<course_advisory>(entity =>
+        {
+            entity.HasKey(e => e.advisory_id).HasName("course_advisories_pkey");
+
+            entity.ToTable("course_advisories", "acad");
+
+            entity.Property(e => e.course_code).HasMaxLength(20);
+            entity.Property(e => e.rule_json)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb");
+
+            entity.HasOne(d => d.course_codeNavigation).WithMany(p => p.course_advisories)
+                .HasForeignKey(d => d.course_code)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("course_advisories_course_code_fkey");
         });
 
         modelBuilder.Entity<course_attempt>(entity =>
@@ -101,6 +172,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.course_code).HasMaxLength(20);
             entity.Property(e => e.created_at).HasDefaultValueSql("now()");
             entity.Property(e => e.credits).HasPrecision(4, 1);
+            entity.Property(e => e.grade_letter).HasColumnType("acad.grade_letter");
             entity.Property(e => e.is_completed).HasDefaultValue(false);
             entity.Property(e => e.raw_record)
                 .HasDefaultValueSql("'{}'::jsonb")
@@ -123,6 +195,31 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.term_code)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("course_attempts_term_code_fkey");
+        });
+
+        modelBuilder.Entity<course_offering>(entity =>
+        {
+            entity.HasKey(e => e.offering_id).HasName("course_offerings_pkey");
+
+            entity.ToTable("course_offerings", "acad");
+
+            entity.HasIndex(e => new { e.term_code, e.course_code }, "course_offerings_term_code_course_code_key").IsUnique();
+
+            entity.Property(e => e.course_code).HasMaxLength(20);
+            entity.Property(e => e.is_open).HasDefaultValue(true);
+            entity.Property(e => e.meta)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb");
+
+            entity.HasOne(d => d.course_codeNavigation).WithMany(p => p.course_offerings)
+                .HasForeignKey(d => d.course_code)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("course_offerings_course_code_fkey");
+
+            entity.HasOne(d => d.term_codeNavigation).WithMany(p => p.course_offerings)
+                .HasForeignKey(d => d.term_code)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("course_offerings_term_code_fkey");
         });
 
         modelBuilder.Entity<curriculum_category>(entity =>
@@ -161,8 +258,10 @@ public partial class AppDbContext : DbContext
 
             entity.Property(e => e.course_code).HasMaxLength(20);
             entity.Property(e => e.is_required).HasDefaultValue(true);
+            entity.Property(e => e.kind).HasColumnType("acad.requirement_kind");
             entity.Property(e => e.min_credits).HasPrecision(5, 1);
             entity.Property(e => e.prereq_rule).HasColumnType("jsonb");
+            entity.Property(e => e.allowed_courses).HasColumnType("acad.course_code[]");
 
             entity.HasOne(d => d.category).WithMany(p => p.curriculum_requirements)
                 .HasForeignKey(d => d.category_id)
@@ -277,6 +376,33 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("students_program_id_fkey");
         });
 
+        modelBuilder.Entity<student_concentration>(entity =>
+        {
+            entity.HasKey(e => e.student_concentration_id).HasName("student_concentrations_pkey");
+
+            entity.ToTable("student_concentrations", "acad");
+
+            entity.HasIndex(e => new { e.student_id, e.concentration_id }, "student_concentrations_student_id_concentration_id_key").IsUnique();
+
+            entity.Property(e => e.created_at).HasDefaultValueSql("now()");
+            entity.Property(e => e.status).HasDefaultValueSql("'active'::text");
+            entity.Property(e => e.student_id).HasMaxLength(20);
+
+            entity.HasOne(d => d.approved_term_codeNavigation).WithMany(p => p.student_concentrations)
+                .HasForeignKey(d => d.approved_term_code)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("student_concentrations_approved_term_code_fkey");
+
+            entity.HasOne(d => d.concentration).WithMany(p => p.student_concentrations)
+                .HasForeignKey(d => d.concentration_id)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("student_concentrations_concentration_id_fkey");
+
+            entity.HasOne(d => d.student).WithMany(p => p.student_concentrations)
+                .HasForeignKey(d => d.student_id)
+                .HasConstraintName("student_concentrations_student_id_fkey");
+        });
+
         modelBuilder.Entity<student_plan>(entity =>
         {
             entity.HasKey(e => e.plan_id).HasName("student_plans_pkey");
@@ -289,6 +415,9 @@ public partial class AppDbContext : DbContext
 
             entity.Property(e => e.course_code).HasMaxLength(20);
             entity.Property(e => e.created_at).HasDefaultValueSql("now()");
+            entity.Property(e => e.status)
+                .HasColumnType("acad.item_status")
+                .HasDefaultValueSql("'planned'::acad.item_status");
             entity.Property(e => e.student_id).HasMaxLength(20);
 
             entity.HasOne(d => d.course_codeNavigation).WithMany(p => p.student_plans)
@@ -327,6 +456,7 @@ public partial class AppDbContext : DbContext
 
             entity.Property(e => e.course_code).HasMaxLength(20);
             entity.Property(e => e.credits).HasPrecision(4, 1);
+            entity.Property(e => e.grade_letter).HasColumnType("acad.grade_letter");
             entity.Property(e => e.student_id).HasMaxLength(20);
         });
 
