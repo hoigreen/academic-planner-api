@@ -234,10 +234,12 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => new { e.program_id, e.cohort_id }, "curricula_program_id_cohort_id_key").IsUnique();
 
-            // ORDBMS: composite type array — acad.knowledge_block[]
-            entity.Property(e => e.structure)
-                .HasColumnType("acad.knowledge_block[]")
-                .HasDefaultValueSql("'{}'");
+            // ORDBMS: acad.knowledge_block[] is not natively supported by the
+            // Npgsql EF Core provider's model validator. We keep the property
+            // on the POCO but exclude it from the EF model; reads/writes go
+            // through raw Npgsql commands using the data source that has
+            // MapComposite<KnowledgeBlock>("acad.knowledge_block") registered.
+            entity.Ignore(e => e.structure);
 
             entity.Property(e => e.course_mapping)
                 .HasDefaultValueSql("'{}'::jsonb")

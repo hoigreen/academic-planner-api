@@ -126,12 +126,16 @@ SELECT program_id, 'Elective Equivalency'
 FROM acad.programs WHERE program_code = 'PM';
 
 INSERT INTO acad.equivalencies
-(equiv_set_id, course_code, equivalent_course_code)
+(equiv_set_id, course_code, equivalent_course_code, cohort_id)
 SELECT
   es.equiv_set_id,
   'ELEC001',
-  'ELEC002'
-FROM acad.equivalency_sets es;
+  'ELEC002',
+  c.cohort_id
+FROM acad.equivalency_sets es
+JOIN acad.programs p ON p.program_id = es.program_id
+JOIN acad.cohorts c ON c.program_id = p.program_id
+WHERE p.program_code = 'PM' AND c.cohort_code = 'K13';
 
 -- ============================================================
 -- 8) Students
