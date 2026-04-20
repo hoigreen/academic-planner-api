@@ -14,60 +14,58 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // ──────────────────────────────────────────────────────────────
-// Authentication: supports Clerk JWT (primary) or Keycloak JWT
+// Authentication: Keycloak is the sole Identity Provider.
+// Supported application roles: Admin, CVHT, SV.
 // ──────────────────────────────────────────────────────────────
-var clerkSection = builder.Configuration.GetSection("Clerk");
-var clerkAuthority = clerkSection["Authority"];          // e.g. https://<instance>.clerk.accounts.dev
-var clerkAudience = clerkSection["Audience"];
+var keycloakSection  = builder.Configuration.GetSection("Keycloak");
+var keycloakAuthority = keycloakSection["Authority"];   // e.g. https://auth.example.com/realms/academic-planner
+var keycloakAudience  = keycloakSection["Audience"];    // e.g. academic-planner-api
+var keycloakClientId  = keycloakSection["ClientId"];    // e.g. academic-planner-web (used for resource_access mapping)
+var validateAudience  = keycloakSection.GetValue<bool?>("ValidateAudience") ?? !string.IsNullOrWhiteSpace(keycloakAudience);
 
-var keycloakSection = builder.Configuration.GetSection("Keycloak");
-var keycloakAuthority = keycloakSection["Authority"];
-
-// Resolve which authority to use (Clerk takes priority)
-var jwtAuthority = !string.IsNullOrWhiteSpace(clerkAuthority) ? clerkAuthority
-    : !string.IsNullOrWhiteSpace(keycloakAuthority) ? keycloakAuthority
-    : null;
-
-var requireAuth = !string.IsNullOrWhiteSpace(jwtAuthority);
+var requireAuth = !string.IsNullOrWhiteSpace(keycloakAuthority);
 
 if (requireAuth)
 {
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
-            options.Authority = jwtAuthority;
-            options.Audience = clerkAudience ?? "academic-planner";
+            options.Authority = keycloakAuthority;
+            options.Audience = keycloakAudience;
             options.RequireHttpsMetadata = builder.Environment.IsProduction();
+            options.MapInboundClaims = false; // keep original Keycloak claim names
+
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
-                ValidateAudience = !string.IsNullOrWhiteSpace(clerkAudience ?? keycloakSection["Audience"]),
+                ValidIssuer = keycloakAuthority,
+                ValidateAudience = validateAudience,
+                ValidAudience = keycloakAudience,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                NameClaimType = "sub",
+                NameClaimType = "preferred_username",
+                RoleClaimType = System.Security.Claims.ClaimTypes.Role,
             };
+
             options.Events = new JwtBearerEvents
             {
                 OnTokenValidated = context =>
                 {
-                    // Extract roles from Clerk metadata or Keycloak realm_access
-                    if (!string.IsNullOrWhiteSpace(clerkAuthority))
-                        ClerkRoleMapper.MapClerkRoles(context);
-                    else
-                        KeycloakRoleMapper.MapKeycloakRoles(context);
+                    KeycloakRoleMapper.MapKeycloakRoles(context, keycloakClientId);
                     return Task.CompletedTask;
                 }
             };
         });
 
     builder.Services.AddAuthorizationBuilder()
-        .AddPolicy("RequireAdvisor", policy => policy.RequireRole("CVHT", "advisor", "Admin"))
-        .AddPolicy("RequireStudent",  policy => policy.RequireRole("SV", "student", "CVHT", "advisor", "Admin"))
-        .AddPolicy("RequireAdmin",    policy => policy.RequireRole("Admin", "admin"));
+        .AddPolicy("RequireAdvisor", policy => policy.RequireRole("CVHT", "Admin"))
+        .AddPolicy("RequireStudent", policy => policy.RequireRole("SV", "CVHT", "Admin"))
+        .AddPolicy("RequireAdmin",   policy => policy.RequireRole("Admin"));
 }
 else
 {
-    // Dev mode: all policies pass-through
+    // Dev mode (no Keycloak configured): all policies pass-through so
+    // developers can hit the API without booting an IdP.
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
@@ -82,8 +80,8 @@ else
 
     builder.Services.AddAuthorizationBuilder()
         .AddPolicy("RequireAdvisor", policy => policy.RequireAssertion(_ => true))
-        .AddPolicy("RequireStudent",  policy => policy.RequireAssertion(_ => true))
-        .AddPolicy("RequireAdmin",    policy => policy.RequireAssertion(_ => true));
+        .AddPolicy("RequireStudent", policy => policy.RequireAssertion(_ => true))
+        .AddPolicy("RequireAdmin",   policy => policy.RequireAssertion(_ => true));
 }
 
 // ──────────────────────────────────────────────────────────────
