@@ -26,6 +26,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<course_offering> course_offerings { get; set; }
 
+    public virtual DbSet<curriculum> curricula { get; set; }
+
     public virtual DbSet<curriculum_category> curriculum_categories { get; set; }
 
     public virtual DbSet<curriculum_requirement> curriculum_requirements { get; set; }
@@ -54,6 +56,8 @@ public partial class AppDbContext : DbContext
             .HasPostgresEnum("acad", "grade_letter", new[] { "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "F", "P", "W", "I" })
             .HasPostgresEnum("acad", "item_status", new[] { "planned", "in_progress", "completed", "waived", "failed" })
             .HasPostgresEnum("acad", "requirement_kind", new[] { "course", "credit_bucket" });
+        // acad.knowledge_block composite type is registered via NpgsqlDataSourceBuilder.MapComposite<KnowledgeBlock>()
+        // in Program.cs — no ModelBuilder call needed.
 
         modelBuilder.Entity<cohort>(entity =>
         {
@@ -220,6 +224,40 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.term_code)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("course_offerings_term_code_fkey");
+        });
+
+        modelBuilder.Entity<curriculum>(entity =>
+        {
+            entity.HasKey(e => e.curriculum_id).HasName("curricula_pkey");
+
+            entity.ToTable("curricula", "acad");
+
+            entity.HasIndex(e => new { e.program_id, e.cohort_id }, "curricula_program_id_cohort_id_key").IsUnique();
+
+            // ORDBMS: composite type array — acad.knowledge_block[]
+            entity.Property(e => e.structure)
+                .HasColumnType("acad.knowledge_block[]")
+                .HasDefaultValueSql("'{}'");
+
+            entity.Property(e => e.course_mapping)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb");
+            entity.Property(e => e.meta)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb");
+            entity.Property(e => e.total_credits).HasPrecision(6, 1);
+            entity.Property(e => e.created_at).HasDefaultValueSql("now()");
+            entity.Property(e => e.updated_at).HasDefaultValueSql("now()");
+
+            entity.HasOne(d => d.program).WithMany()
+                .HasForeignKey(d => d.program_id)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("curricula_program_id_fkey");
+
+            entity.HasOne(d => d.cohort).WithMany()
+                .HasForeignKey(d => d.cohort_id)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("curricula_cohort_id_fkey");
         });
 
         modelBuilder.Entity<curriculum_category>(entity =>

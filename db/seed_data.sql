@@ -71,7 +71,7 @@ FROM acad.programs WHERE program_code = 'PM';
 -- 6) Curriculum Requirements
 -- ============================================================
 
--- === Required course: POLS101
+-- === Required course: POLS101 (no prerequisite)
 INSERT INTO acad.curriculum_requirements
 (cohort_id, category_id, kind, course_code, prereq_rule)
 SELECT
@@ -79,14 +79,14 @@ SELECT
   cat.category_id,
   'course',
   'POLS101',
-  '{"type":"none","raw":"No prerequisite"}'
+  NULL
 FROM acad.cohorts c
 JOIN acad.curriculum_categories cat
   ON cat.program_id = c.program_id
 WHERE c.cohort_code = 'K13'
   AND cat.category_name = 'General Education';
 
--- === Required course with prerequisite
+-- === Required course with op/args prerequisite
 INSERT INTO acad.curriculum_requirements
 (cohort_id, category_id, kind, course_code, prereq_rule)
 SELECT
@@ -94,11 +94,7 @@ SELECT
   cat.category_id,
   'course',
   'POLS201',
-  '{
-     "type":"course",
-     "courses":[{"code":"POLS101","min_grade":"C"}],
-     "raw":"POLS101 (C or higher)"
-   }'
+  '{"op":"AND","args":[{"op":"COMPLETED","course":"POLS101"}]}'
 FROM acad.cohorts c
 JOIN acad.curriculum_categories cat
   ON cat.program_id = c.program_id

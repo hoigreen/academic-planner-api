@@ -121,9 +121,16 @@ CREATE INDEX IF NOT EXISTS idx_categories_program_order
 ON acad.curriculum_categories (program_id, sort_order NULLS LAST);
 
 -- Curriculum requirements (per cohort, per category)
--- prereq_rule is polymorphic JSON object:
---   {"type":"course","courses":[{"code":"WRT 122","min_grade":"C"}], "raw":"WRT 122"}
---   {"type":"english","min_level":5,"min_ielts":5.5,"raw":"Level 5/IELTS 5.5+"}
+-- prereq_rule is a recursive JSONB expression evaluated by the rule engine:
+--   Operator format  : {"op":"AND","args":[<node>, ...]}
+--                      {"op":"OR","args":[<node>, ...]}
+--                      {"op":"NOT","arg":<node>}
+--                      {"op":"COMPLETED","course":"COURSE101"}
+--                      {"op":"MIN_CREDITS","value":30}
+--                      {"op":"MIN_GPA","value":2.5}
+--                      {"op":"ENGLISH","min_level":5,"min_ielts":5.5}
+-- Legacy type format  : {"type":"none"|"course"|"english"|"and"|"or", ...}
+--                       (supported for backward compatibility)
 -- elective pool is stored as course_code[] (optional)
 CREATE TABLE acad.curriculum_requirements (
   requirement_id bigserial PRIMARY KEY,
