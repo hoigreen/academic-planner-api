@@ -15,7 +15,13 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db:/docker-entrypoint-initdb.d
+      - ./db/00_schema.sql:/docker-entrypoint-initdb.d/00_schema.sql:ro
+      - ./db/01_keycloak_db.sql:/docker-entrypoint-initdb.d/01_keycloak_db.sql:ro
+      - ./db/10_extensions.sql:/docker-entrypoint-initdb.d/10_extensions.sql:ro
+      - ./db/20_seed_bbs.sql:/docker-entrypoint-initdb.d/20_seed_bbs.sql:ro
+      - ./db/30_curricula.sql:/docker-entrypoint-initdb.d/30_curricula.sql:ro
+      - ./db/99_sync_curricula.sql:/docker-entrypoint-initdb.d/zz_sync_curricula.sql:ro
+      - ./db/seed_data.sql:/docker-entrypoint-initdb.d/seed_data.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d academic_planner"]
       interval: 10s

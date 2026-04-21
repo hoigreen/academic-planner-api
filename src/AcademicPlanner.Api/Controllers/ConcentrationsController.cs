@@ -35,19 +35,15 @@ public class ConcentrationsController : ControllerBase
     }
 
     [HttpGet("students/{studentId}/concentration")]
-    public async Task<ActionResult<ApiEnvelope<StudentConcentrationDto>>> GetStudentConcentration(string studentId, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiEnvelope<StudentConcentrationDto?>>> GetStudentConcentration(string studentId, CancellationToken cancellationToken)
     {
         var row = await _db.student_concentrations.AsNoTracking()
             .Include(x => x.concentration)
             .Where(x => x.student_id == studentId && x.status == "active")
             .OrderByDescending(x => x.created_at)
             .FirstOrDefaultAsync(cancellationToken);
-        if (row is null)
-        {
-            return NotFound();
-        }
 
-        return Ok(ApiEnvelope.Ok(ToDto(row)));
+        return Ok(ApiEnvelope.Ok<StudentConcentrationDto?>(row is null ? null : ToDto(row)));
     }
 
     [HttpPost("students/{studentId}/concentration")]

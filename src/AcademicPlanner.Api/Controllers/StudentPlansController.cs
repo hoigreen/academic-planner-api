@@ -49,7 +49,7 @@ public class StudentPlansController : ControllerBase
             .OrderBy(x => x.plan_id)
             .ToListAsync(cancellationToken);
 
-        return rows.Count == 0 ? NotFound() : Ok(ApiEnvelope.Ok(ToPlanByTerm(studentId, termCode, rows)));
+        return Ok(ApiEnvelope.Ok(ToPlanByTerm(studentId, termCode, rows)));
     }
 
     [HttpPost]

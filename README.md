@@ -1,10 +1,35 @@
 # Academic Planner API (Roadmap/Audit/Recommendation)
 
-## Run with Docker
+## Team Setup (Start From Scratch)
+
+This setup gives every teammate:
+
+- their own local Docker PostgreSQL database
+- the same schema and seed data
+- repeatable reset commands when data gets out of sync
+
+### Prerequisites
+
+- Docker + Docker Compose
+- `make`
+
+### First-time onboarding
 
 ```bash
-docker compose up --build
+git clone <repo-url>
+cd academic-planner/academic-planner-api
+make db-reset
 ```
+
+After `make db-reset`, your local DB is rebuilt from scratch and all SQL init scripts in `db/` are applied.
+
+### Run full backend stack
+
+```bash
+make app-up
+```
+
+Endpoints:
 
 - API: `http://localhost:8080`
 - Swagger: `http://localhost:8080/swagger`
@@ -13,15 +38,41 @@ docker compose up --build
   - `GET /health/live`
   - `GET /health/ready`
 
+### Daily commands
+
+- `make db-up`: start PostgreSQL only
+- `make db-down`: stop PostgreSQL (keep data)
+- `make db-reset`: rebuild PostgreSQL and re-run all SQL scripts in `db/`
+- `make db-wait`: wait until PostgreSQL is ready
+- `make db-seed`: re-apply BBS + PM seed scripts and sync curricula
+- `make db-logs`: stream PostgreSQL logs
+- `make db-shell`: open `psql` in container
+- `make app-up`: start full stack (Postgres + Keycloak + API)
+- `make app-down`: stop full stack
+
+### If your local data is broken
+
+Run:
+
+```bash
+make db-reset
+```
+
+This is the team standard way to get back to a clean, shared baseline dataset.
+
 ## Database
 
-Init scripts are in `db/`:
+Init scripts are in `db/` (executed in filename order on fresh DB):
 
-- `schema.sql`: core ORDBMS schema (`acad`) with domains, enums, JSONB prereqs
-- `seed_data.sql`: demo seed
+- `00_schema.sql`: core ORDBMS schema (`acad`) with domains, enums, JSONB prereqs
+- `01_keycloak_db.sql`: creates `keycloak_db` for identity server
 - `10_extensions.sql`: concentrations/offerings/advisories extensions
 - `20_seed_bbs.sql`: representative BBS seed
 - `30_curricula.sql`: `knowledge_block` composite type + `curricula` table (ORDBMS array of composite types + JSONB course mapping)
+- `seed_data.sql`: demo seed
+- `99_sync_curricula.sql`: syncs `acad.curricula` from seeded requirements
+
+`seed_data_bbs.sql` is kept for reference and is not part of the default Docker init flow.
 
 ## Authentication
 

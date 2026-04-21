@@ -235,8 +235,6 @@ public class CurriculumController : ControllerBase
         [FromQuery] StudentSearchQueryDto query, CancellationToken cancellationToken)
     {
         var q = _db.students.AsNoTracking()
-            .Include(x => x.program)
-            .Include(x => x.cohort)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(query.StudentId))
@@ -261,22 +259,36 @@ public class CurriculumController : ControllerBase
         var page = Math.Max(1, query.Page);
         var pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-        var students = await q
+        var rows = await q
             .OrderBy(x => x.student_id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(x => new StudentDto(
+            .Select(x => new
+            {
                 x.student_id,
-                string.Join(" ", new[] { x.last_name, x.first_name }.Where(s => s != null)),
+                x.last_name,
+                x.first_name,
                 x.program_id,
-                x.program != null ? x.program.program_code : null,
+                program_code = x.program != null ? x.program.program_code : null,
                 x.cohort_id,
-                x.cohort != null ? x.cohort.cohort_code : null,
+                cohort_code = x.cohort != null ? x.cohort.cohort_code : null,
                 x.status,
                 x.english_level,
-                x.ielts_score
-            ))
+                x.ielts_score,
+            })
             .ToListAsync(cancellationToken);
+
+        var students = rows.Select(x => new StudentDto(
+            x.student_id,
+            string.Join(" ", new[] { x.last_name, x.first_name }.Where(s => s != null)),
+            x.program_id,
+            x.program_code,
+            x.cohort_id,
+            x.cohort_code,
+            x.status,
+            x.english_level,
+            x.ielts_score
+        )).ToList();
 
         return Ok(ApiEnvelope.Ok(new StudentSearchResultDto(students, total, page, pageSize)));
     }
