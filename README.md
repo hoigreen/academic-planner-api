@@ -23,6 +23,12 @@ make db-reset
 
 After `make db-reset`, your local DB is rebuilt from scratch and all SQL init scripts in `db/` are applied.
 
+If `5433` is already occupied on your machine, override the published Postgres port for that shell:
+
+```bash
+POSTGRES_HOST_PORT=5434 make db-reset
+```
+
 ### Run full backend stack
 
 ```bash
@@ -69,8 +75,9 @@ Init scripts are in `db/` (executed in filename order on fresh DB):
 - `10_extensions.sql`: concentrations/offerings/advisories extensions
 - `20_seed_bbs.sql`: representative BBS seed
 - `30_curricula.sql`: `knowledge_block` composite type + `curricula` table (ORDBMS array of composite types + JSONB course mapping)
-- `40_seed_bbs_students.sql`: anonymized students from `input_csv/4. BBS audit.csv`
-- `seed_data.sql`: demo seed
+- `40_seed_bbs_students.sql`: legacy bulk BBS student seed kept for reference; no longer part of the default init flow
+- `60_seed_fake_data.sql`: curated benchmark seed with a small but diverse student mix across programs/cohorts
+- `seed_data.sql`: legacy demo seed kept for reference, no longer part of the default init flow
 - `99_sync_curricula.sql`: syncs `acad.curricula` from seeded requirements
 
 `seed_data_bbs.sql` is kept for reference and is not part of the default Docker init flow.

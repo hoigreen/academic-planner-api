@@ -31,9 +31,8 @@ db-shell:
 db-seed:
 	$(MAKE) db-wait
 	docker compose exec -T postgres psql -U postgres -d academic_planner -f /docker-entrypoint-initdb.d/20_seed_bbs.sql
-	docker compose exec -T postgres psql -U postgres -d academic_planner -f /docker-entrypoint-initdb.d/40_seed_bbs_students.sql
 	docker compose exec -T postgres psql -U postgres -d academic_planner -f /docker-entrypoint-initdb.d/50_seed_bbs_k12_k13_curriculum.sql
-	docker compose exec -T postgres psql -U postgres -d academic_planner -f /docker-entrypoint-initdb.d/seed_data.sql
+	docker compose exec -T postgres psql -U postgres -d academic_planner -f /docker-entrypoint-initdb.d/60_seed_fake_data.sql
 	docker compose exec -T postgres psql -U postgres -d academic_planner -f /docker-entrypoint-initdb.d/zz_sync_curricula.sql
 
 # Start full stack (Postgres + Keycloak + API).
