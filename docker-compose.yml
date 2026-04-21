@@ -1,8 +1,12 @@
 services:
+
+  # ────────────────────────────────────────────
+  # PostgreSQL – shared by the API and Keycloak
+  # ────────────────────────────────────────────
   postgres:
     image: postgres:16
     container_name: academic-planner-db
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_DB: academic_planner
       POSTGRES_USER: postgres
@@ -18,38 +22,86 @@ services:
       timeout: 5s
       retries: 10
 
+  # ────────────────────────────────────────────
+  # Keycloak – sole Identity Provider
+  # Realm + clients + roles are auto-imported
+  # from keycloak/realm-export.json on first
+  # start (--import-realm).
+  #
+  # Admin console : http://localhost:8180/admin
+  # Credentials   : admin / admin
+  # ────────────────────────────────────────────
   keycloak:
-    image: quay.io/keycloak/keycloak:24.0
+    image: quay.io/keycloak/keycloak:25.0.6
     container_name: academic-planner-keycloak
-    command: start-dev
+    restart: unless-stopped
+    command:
+      - start-dev
+      - --import-realm
     environment:
+      # --- database backend (dedicated DB avoids schema-creation issues) ---
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/academic_planner
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: postgres
-      KC_DB_SCHEMA: keycloak
+      # --- admin credentials ---
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      # --- tunables ---
+      KC_HTTP_PORT: "8080"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_LOG_LEVEL: INFO
+      KC_HEALTH_ENABLED: "true"
     ports:
       - "8180:8080"
+    volumes:
+      # Realm JSON is mounted read-only; Keycloak imports it once on first boot.
+      - ./keycloak:/opt/keycloak/data/import:ro
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      # keycloak-js image has neither curl nor wget; use bash's built-in
+      # /dev/tcp to hit the management health endpoint (requires KC_HEALTH_ENABLED=true).
+      test:
+        - "CMD-SHELL"
+        - >
+          exec 3<>/dev/tcp/localhost/9000 &&
+          printf 'GET /health/ready HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3 &&
+          head -1 <&3 | grep -q '200 OK'
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
 
+  # ────────────────────────────────────────────
+  # .NET Core API
+  # ────────────────────────────────────────────
   api:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: academic-planner-api
+    restart: unless-stopped
     depends_on:
       postgres:
+        condition: service_healthy
+      keycloak:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=academic_planner;Username=postgres;Password=postgres
+      ConnectionStrings__DefaultConnection: >-
+        Host=postgres;Port=5432;Database=academic_planner;
+        Username=postgres;Password=postgres
+      # Authority must be the URL the API can reach *inside* Docker (service name).
+      # The realm URL the React app uses (localhost:8180) is different — see .env.
       Keycloak__Authority: http://keycloak:8080/realms/academic-planner
-      Keycloak__Audience: academic-planner
+      Keycloak__Audience: academic-planner-api
+      Keycloak__ClientId: academic-planner-web
+      Keycloak__ValidateAudience: "false"
+      Keycloak__RequireHttpsMetadata: "false"
     ports:
       - "8080:8080"
 

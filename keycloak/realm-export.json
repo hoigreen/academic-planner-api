@@ -1,0 +1,135 @@
+{
+  "id": "academic-planner",
+  "realm": "academic-planner",
+  "displayName": "Academic Planner",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "Admin",
+        "description": "Quản trị viên đào tạo (Admin Đào Tạo)"
+      },
+      {
+        "name": "CVHT",
+        "description": "Cố vấn học tập"
+      },
+      {
+        "name": "SV",
+        "description": "Sinh viên"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "academic-planner-web",
+      "name": "Academic Planner – Web SPA",
+      "description": "React frontend (public PKCE client)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:4173/*",
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://localhost:4173",
+        "http://localhost:3000"
+      ],
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles",
+        "web-origins"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access"
+      ]
+    },
+    {
+      "clientId": "academic-planner-api",
+      "name": "Academic Planner – API (audience only)",
+      "description": "Bearer-only resource server used for audience validation",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect"
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "email": "admin@example.com",
+      "firstName": "Admin",
+      "lastName": "Đào Tạo",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "123456",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "Admin"
+      ]
+    },
+    {
+      "username": "cvht01",
+      "email": "cvht01@example.com",
+      "firstName": "Cố vấn",
+      "lastName": "Học tập 01",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "123456",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "CVHT"
+      ]
+    },
+    {
+      "username": "sv001",
+      "email": "sv001@example.com",
+      "firstName": "Sinh",
+      "lastName": "Viên 001",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "123456",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "SV"
+      ]
+    }
+  ]
+}
