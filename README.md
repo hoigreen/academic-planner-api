@@ -44,7 +44,7 @@ Endpoints:
 - `make db-down`: stop PostgreSQL (keep data)
 - `make db-reset`: rebuild PostgreSQL and re-run all SQL scripts in `db/`
 - `make db-wait`: wait until PostgreSQL is ready
-- `make db-seed`: re-apply BBS + PM seed scripts and sync curricula
+- `make db-seed`: re-apply BBS + PM + student seed scripts and sync curricula
 - `make db-logs`: stream PostgreSQL logs
 - `make db-shell`: open `psql` in container
 - `make app-up`: start full stack (Postgres + Keycloak + API)
@@ -69,6 +69,7 @@ Init scripts are in `db/` (executed in filename order on fresh DB):
 - `10_extensions.sql`: concentrations/offerings/advisories extensions
 - `20_seed_bbs.sql`: representative BBS seed
 - `30_curricula.sql`: `knowledge_block` composite type + `curricula` table (ORDBMS array of composite types + JSONB course mapping)
+- `40_seed_bbs_students.sql`: anonymized students from `input_csv/4. BBS audit.csv`
 - `seed_data.sql`: demo seed
 - `99_sync_curricula.sql`: syncs `acad.curricula` from seeded requirements
 

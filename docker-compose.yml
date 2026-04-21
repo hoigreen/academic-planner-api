@@ -20,6 +20,8 @@ services:
       - ./db/10_extensions.sql:/docker-entrypoint-initdb.d/10_extensions.sql:ro
       - ./db/20_seed_bbs.sql:/docker-entrypoint-initdb.d/20_seed_bbs.sql:ro
       - ./db/30_curricula.sql:/docker-entrypoint-initdb.d/30_curricula.sql:ro
+      - ./db/40_seed_bbs_students.sql:/docker-entrypoint-initdb.d/40_seed_bbs_students.sql:ro
+      - ./db/50_seed_bbs_k12_k13_curriculum.sql:/docker-entrypoint-initdb.d/50_seed_bbs_k12_k13_curriculum.sql:ro
       - ./db/99_sync_curricula.sql:/docker-entrypoint-initdb.d/zz_sync_curricula.sql:ro
       - ./db/seed_data.sql:/docker-entrypoint-initdb.d/seed_data.sql:ro
     healthcheck:
